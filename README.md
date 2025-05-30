@@ -2,7 +2,7 @@
 
 A fully offline Progressive Web App that uses AI to track your nutrition by analyzing food photos. Built with React, TypeScript, and TensorFlow.js for complete privacy and offline functionality.
 
-## ✨ Features
+## ✨ Features 
 
 ### 🤖 AI-Powered Food Recognition
 - **Offline TensorFlow.js**: Uses MobileNet for on-device food classification
