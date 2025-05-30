@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Food Tracker Debug</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .status {
+            background: white;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 4px solid #007bff;
+        }
+        .error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        .success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        .loading {
+            border-left-color: #ffc107;
+            background: #fff3cd;
+        }
+    </style>
+</head>
+<body>
+    <h1>Food Tracker PWA - Debug Check</h1>
+    
+    <div id="status-container">
+        <div class="status loading">🔄 Running diagnostics...</div>
+    </div>
+
+    <script>
+        const statusContainer = document.getElementById('status-container');
+        
+        function addStatus(message, type = 'status') {
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            statusContainer.appendChild(div);
+        }
+        
+        // Clear initial message
+        statusContainer.innerHTML = '';
+        
+        // Test 1: Basic browser environment
+        addStatus('✅ JavaScript is working', 'success');
+        
+        // Test 2: Check IndexedDB
+        if ('indexedDB' in window) {
+            addStatus('✅ IndexedDB is available', 'success');
+            
+            // Try to open database
+            const request = indexedDB.open('FoodTrackerDB', 1);
+            request.onsuccess = () => {
+                addStatus('✅ Can open IndexedDB', 'success');
+                request.result.close();
+            };
+            request.onerror = (e) => {
+                addStatus('❌ IndexedDB error: ' + e.target.error, 'error');
+            };
+            request.onupgradeneeded = (e) => {
+                addStatus('🔄 Creating IndexedDB structure...', 'loading');
+                const db = e.target.result;
+                
+                if (!db.objectStoreNames.contains('meals')) {
+                    const mealsStore = db.createObjectStore('meals', { keyPath: 'id' });
+                    mealsStore.createIndex('timestamp', 'timestamp');
+                    addStatus('✅ Created meals store', 'success');
+                }
+                
+                if (!db.objectStoreNames.contains('settings')) {
+                    db.createObjectStore('settings', { keyPath: 'key' });
+                    addStatus('✅ Created settings store', 'success');
+                }
+            };
+        } else {
+            addStatus('❌ IndexedDB not available', 'error');
+        }
+        
+        // Test 3: Check nutrition.json
+        fetch('/nutrition.json')
+            .then(response => {
+                if (response.ok) {
+                    addStatus('✅ nutrition.json is accessible', 'success');
+                    return response.json();
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            })
+            .then(data => {
+                if (data && typeof data === 'object') {
+                    const count = Object.keys(data).length;
+                    addStatus(`✅ nutrition.json loaded with ${count} food items`, 'success');
+                } else {
+                    addStatus('❌ nutrition.json has invalid format', 'error');
+                }
+            })
+            .catch(e => {
+                addStatus('❌ Cannot load nutrition.json: ' + e.message, 'error');
+            });
+        
+        // Test 4: Check React app mount point
+        setTimeout(() => {
+            const root = document.getElementById('root');
+            if (root) {
+                addStatus('✅ React root element exists', 'success');
+            } else {
+                addStatus('❌ React root element missing', 'error');
+            }
+            
+            // Try to check if React has mounted anything
+            if (root && root.innerHTML.trim() !== '') {
+                addStatus('✅ React app has rendered content', 'success');
+            } else if (root) {
+                addStatus('❌ React app has not rendered anything', 'error');
+            }
+        }, 2000);
+        
+        // Test 5: Console error tracking
+        const originalError = console.error;
+        console.error = function(...args) {
+            addStatus('❌ Console Error: ' + args.join(' '), 'error');
+            originalError.apply(console, args);
+        };
+        
+        const originalWarn = console.warn;
+        console.warn = function(...args) {
+            addStatus('⚠️ Console Warning: ' + args.join(' '), 'loading');
+            originalWarn.apply(console, args);
+        };
+        
+        addStatus('🔍 Diagnostic complete - check results above', 'success');
+        
+    </script>
+</body>
+</html>
